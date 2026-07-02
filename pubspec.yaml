@@ -1,0 +1,63 @@
+name: calculator_vault
+description: A premium calculator with a hidden, fully encrypted personal vault.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.6.1
+
+  # Routing
+  go_router: ^14.6.2
+
+  # Local database (community-maintained Hive fork, drop-in compatible)
+  hive_ce: ^2.10.1
+  hive_ce_flutter: ^2.2.0
+
+  # Security
+  flutter_secure_storage: ^9.2.2
+  cryptography: ^2.7.0
+  local_auth: ^2.3.0
+
+  # Permissions & media (used from Phase 6 onward)
+  permission_handler: ^11.3.1
+  photo_manager: ^3.6.3
+  image_picker: ^1.1.2
+  file_picker: ^8.1.6
+  video_player: ^2.9.2
+
+  # Image decoding / thumbnail generation
+  image: ^4.3.0
+
+  # Animations
+  flutter_animate: ^4.5.2
+  animations: ^2.0.11
+  lottie: ^3.2.0
+
+  # Design
+  google_fonts: ^6.2.1
+  material_symbols_icons: ^4.2801.1
+  dynamic_color: ^1.7.0
+
+  # Utilities
+  intl: ^0.19.0
+  path_provider: ^2.1.5
+  uuid: ^4.5.1
+  share_plus: ^10.1.3
+  package_info_plus: ^8.1.2
+  device_info_plus: ^11.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  fake_async: ^1.3.1
+
+flutter:
+  uses-material-design: true
