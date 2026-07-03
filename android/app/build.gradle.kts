@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.codebysushant.calculator_vault"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
