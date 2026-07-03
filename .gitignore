@@ -52,3 +52,6 @@ android/.gradle/
 *.apk
 *.dex
 android/local.properties
+
+*.hprof
+hs_err_pid*.log
