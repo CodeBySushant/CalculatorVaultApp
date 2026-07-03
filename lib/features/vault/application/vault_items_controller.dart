@@ -146,6 +146,13 @@ class VaultItemsController extends AsyncNotifier<List<VaultItem>> {
     await _apply(next);
   }
 
+  /// Applies [transform] to the item with [id], persisting the result.
+  /// Used by feature screens for targeted updates (e.g. video resume
+  /// position) without adding a bespoke method per field.
+  Future<void> updateItem(String id, VaultItem Function(VaultItem) transform) {
+    return _updateWhere((VaultItem i) => i.id == id, transform);
+  }
+
   Future<void> rename(String id, String newName) async {
     final String trimmed = newName.trim();
     if (trimmed.isEmpty) return;

@@ -29,8 +29,10 @@ dependencies:
   permission_handler: ^11.3.1
   photo_manager: ^3.6.3
   image_picker: ^1.1.2
-  file_picker: ^8.1.6
   video_player: ^2.9.2
+  # Document import. Its Android module needs compileSdk 36 alignment —
+  # handled by the subprojects block in android/build.gradle.kts.
+  file_picker: ^11.0.2
 
   # Image decoding / thumbnail generation
   image: ^4.3.0

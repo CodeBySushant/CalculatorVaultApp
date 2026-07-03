@@ -22,4 +22,17 @@ abstract final class Formatters {
 
   /// `Jan 4, 2026`.
   static String date(DateTime date) => _date.format(date);
+
+  /// `3:07` or `1:02:07` for longer media.
+  static String duration(Duration d) {
+    final int hours = d.inHours;
+    final int minutes = d.inMinutes.remainder(60);
+    final int seconds = d.inSeconds.remainder(60);
+    final String twoSec = seconds.toString().padLeft(2, '0');
+    if (hours > 0) {
+      final String twoMin = minutes.toString().padLeft(2, '0');
+      return '$hours:$twoMin:$twoSec';
+    }
+    return '$minutes:$twoSec';
+  }
 }

@@ -9,21 +9,21 @@ import '../../authentication/application/vault_session.dart';
 import '../../vault/application/selection_controller.dart';
 import '../../vault/application/vault_items_controller.dart';
 import '../../vault/domain/vault_item.dart';
-import '../application/photo_import_service.dart';
-import '../application/photo_providers.dart';
-import 'photo_grid_tile.dart';
-import 'photo_viewer_screen.dart';
+import '../application/video_import_service.dart';
+import '../application/video_providers.dart';
+import 'video_grid_tile.dart';
+import 'video_player_screen.dart';
 
-/// Photos category: an encrypted photo grid with import, multi-select, and
-/// tap-to-open full-screen viewing.
-class PhotoGridScreen extends ConsumerStatefulWidget {
-  const PhotoGridScreen({super.key});
+/// Videos category: encrypted video grid with import, multi-select, and
+/// tap-to-play.
+class VideoGridScreen extends ConsumerStatefulWidget {
+  const VideoGridScreen({super.key});
 
   @override
-  ConsumerState<PhotoGridScreen> createState() => _PhotoGridScreenState();
+  ConsumerState<VideoGridScreen> createState() => _VideoGridScreenState();
 }
 
-class _PhotoGridScreenState extends ConsumerState<PhotoGridScreen> {
+class _VideoGridScreenState extends ConsumerState<VideoGridScreen> {
   bool _importing = false;
   int _done = 0;
   int _total = 0;
@@ -38,7 +38,7 @@ class _PhotoGridScreenState extends ConsumerState<PhotoGridScreen> {
     try {
       final List<VaultItem> items =
           await ref.read(vaultSessionProvider.notifier).withoutAutoLock(
-                () => ref.read(photoImportServiceProvider).pickAndImport(
+                () => ref.read(videoImportServiceProvider).pickAndImport(
                   onProgress: (int done, int total) {
                     if (mounted) {
                       setState(() {
@@ -57,8 +57,8 @@ class _PhotoGridScreenState extends ConsumerState<PhotoGridScreen> {
           SnackBar(
             content: Text(
               items.length == 1
-                  ? '1 photo added to your vault'
-                  : '${items.length} photos added to your vault',
+                  ? '1 video added to your vault'
+                  : '${items.length} videos added to your vault',
             ),
             behavior: SnackBarBehavior.floating,
           ),
@@ -68,7 +68,7 @@ class _PhotoGridScreenState extends ConsumerState<PhotoGridScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Could not import photos'),
+            content: Text('Could not import videos'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -78,16 +78,16 @@ class _PhotoGridScreenState extends ConsumerState<PhotoGridScreen> {
     }
   }
 
-  void _openViewer(VaultItem item) {
+  void _openPlayer(VaultItem item) {
     context.push(
-      AppRoutes.photoViewer,
-      extra: PhotoViewerArgs(initialId: item.id),
+      AppRoutes.videoPlayer,
+      extra: VideoPlayerArgs(itemId: item.id),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<VaultItem> photos = ref.watch(photoItemsProvider);
+    final List<VaultItem> videos = ref.watch(videoItemsProvider);
     final Set<String> selection = ref.watch(selectionProvider);
     final bool selectionMode = selection.isNotEmpty;
     final SelectionController selector = ref.read(selectionProvider.notifier);
@@ -113,7 +113,7 @@ class _PhotoGridScreenState extends ConsumerState<PhotoGridScreen> {
                     tooltip: 'Select all',
                     icon: const Icon(Symbols.select_all),
                     onPressed: () =>
-                        selector.selectAll(photos.map((VaultItem i) => i.id)),
+                        selector.selectAll(videos.map((VaultItem i) => i.id)),
                   ),
                   IconButton(
                     tooltip: 'Favorite',
@@ -144,23 +144,23 @@ class _PhotoGridScreenState extends ConsumerState<PhotoGridScreen> {
                   ),
                 ],
               )
-            : AppBar(title: Text('Photos (${photos.length})')),
+            : AppBar(title: Text('Videos (${videos.length})')),
         floatingActionButton: selectionMode
             ? null
             : FloatingActionButton.extended(
                 onPressed: _importing ? null : _import,
-                icon: const Icon(Symbols.add_photo_alternate),
+                icon: const Icon(Symbols.video_call),
                 label: const Text('Add'),
               ),
         body: Stack(
           children: <Widget>[
-            if (photos.isEmpty && !_importing)
+            if (videos.isEmpty && !_importing)
               EmptyState(
-                icon: Symbols.image,
-                title: 'No photos yet',
-                message: 'Add photos to keep them encrypted and private. '
+                icon: Symbols.movie,
+                title: 'No videos yet',
+                message: 'Add videos to keep them encrypted and private. '
                     'They never appear in your device gallery.',
-                actionLabel: 'Add photos',
+                actionLabel: 'Add videos',
                 onAction: _import,
               )
             else
@@ -173,21 +173,22 @@ class _PhotoGridScreenState extends ConsumerState<PhotoGridScreen> {
                 ),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: context.responsive<int>(
-                      compact: 3, medium: 4, expanded: 6),
+                      compact: 2, medium: 3, expanded: 4),
                   mainAxisSpacing: AppSpacing.sm,
                   crossAxisSpacing: AppSpacing.sm,
+                  childAspectRatio: 16 / 10,
                 ),
-                itemCount: photos.length,
+                itemCount: videos.length,
                 itemBuilder: (BuildContext context, int index) {
-                  final VaultItem item = photos[index];
+                  final VaultItem item = videos[index];
                   final bool selected = selection.contains(item.id);
-                  return PhotoGridTile(
+                  return VideoGridTile(
                     item: item,
                     selected: selected,
                     selectionMode: selectionMode,
                     onTap: () => selectionMode
                         ? selector.toggle(item.id)
-                        : _openViewer(item),
+                        : _openPlayer(item),
                     onLongPress: () => selector.toggle(item.id),
                   );
                 },
@@ -232,7 +233,7 @@ class _ImportBanner extends StatelessWidget {
                 child: Text(
                   total == 0
                       ? 'Preparing…'
-                      : 'Encrypting $done of $total photos…',
+                      : 'Encrypting $done of $total videos…',
                   style: theme.textTheme.bodyMedium,
                 ),
               ),

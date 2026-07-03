@@ -16,6 +16,7 @@ class VaultItem {
     this.relativePath,
     this.thumbnailPath,
     this.byteLength = 0,
+    this.durationMs = 0,
     this.folderId,
     this.favorite = false,
     this.pinned = false,
@@ -43,6 +44,9 @@ class VaultItem {
   /// Original plaintext size in bytes (0 for record-only items).
   final int byteLength;
 
+  /// Media duration in milliseconds (videos and voice notes; 0 otherwise).
+  final int durationMs;
+
   /// Folder/album the item belongs to; null = root.
   final String? folderId;
 
@@ -69,6 +73,7 @@ class VaultItem {
     String? relativePath,
     String? thumbnailPath,
     int? byteLength,
+    int? durationMs,
     String? folderId,
     DateTime? updatedAt,
     bool? favorite,
@@ -85,6 +90,7 @@ class VaultItem {
       relativePath: relativePath ?? this.relativePath,
       thumbnailPath: thumbnailPath ?? this.thumbnailPath,
       byteLength: byteLength ?? this.byteLength,
+      durationMs: durationMs ?? this.durationMs,
       folderId: folderId ?? this.folderId,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

@@ -44,9 +44,34 @@ captures.
 
 `image_picker` uses the system **Photo Picker** on Android 13+ (API 33+),
 which requires **no** runtime storage/media permission. Nothing to add for
-photo import. This is a deliberate choice to keep the vault from ever
-requesting broad media access.
+photo or video import. This is a deliberate choice to keep the vault from
+ever requesting broad media access.
+
+`video_thumbnail` (poster frames) is native. If it ever conflicts with the
+Android SDK level during a build, remove the single `video_thumbnail` line
+from `pubspec.yaml` — videos still import and play, just with a gradient
+placeholder instead of a poster frame. All poster code is guarded to
+tolerate its absence at runtime.
 
 Documented limitation: iOS cannot programmatically block a user-initiated
 screenshot while the app is in the foreground. This is a platform
 restriction that applies to all iOS apps.
+
+
+## Documents (Phase 9) — build.gradle.kts
+
+`file_picker`'s Android module declares an older compileSdk than its
+transitive dependencies require (the same class of issue that blocks builds
+on API 36). The project-level `android/build.gradle.kts` therefore forces
+every plugin module to compileSdk 36.
+
+A ready copy lives at `platform/android/build.gradle.kts`. It also contains
+the build-output redirect this setup needs so `flutter run` can find the
+produced APK. After `flutter create`, replace the generated file:
+
+```bash
+cp platform/android/build.gradle.kts android/build.gradle.kts
+```
+
+If a build ever fails with "plugin is currently compiled against android-34",
+this file is the fix.

@@ -7,9 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  ProviderContainer makeContainer({
-    Duration timeout = const Duration(minutes: 1),
-  }) {
+  ProviderContainer makeContainer(
+      {Duration timeout = const Duration(minutes: 1)}) {
     final ProviderContainer container = ProviderContainer(
       overrides: <Override>[
         autoLockTimeoutProvider.overrideWithValue(timeout),
@@ -92,6 +91,33 @@ void main() {
       async.elapse(const Duration(seconds: 31));
       expect(container.read(vaultSessionProvider), VaultSessionState.locked);
     });
+  });
+
+  test('backgrounding during withoutAutoLock does NOT lock', () async {
+    final ProviderContainer container = makeContainer();
+    final VaultSessionController session =
+        container.read(vaultSessionProvider.notifier);
+
+    session.unlock();
+    await session.withoutAutoLock(() async {
+      // Simulate the app backgrounding while the picker is open.
+      session.debugHandleLifecycle(AppLifecycleState.paused);
+      expect(container.read(vaultSessionProvider), VaultSessionState.unlocked);
+    });
+    // Still unlocked after the guarded operation completes.
+    expect(container.read(vaultSessionProvider), VaultSessionState.unlocked);
+  });
+
+  test('backgrounding after withoutAutoLock completes locks normally',
+      () async {
+    final ProviderContainer container = makeContainer();
+    final VaultSessionController session =
+        container.read(vaultSessionProvider.notifier);
+
+    session.unlock();
+    await session.withoutAutoLock(() async {});
+    session.debugHandleLifecycle(AppLifecycleState.paused);
+    expect(container.read(vaultSessionProvider), VaultSessionState.locked);
   });
 
   test('touch resets the idle timer', () {

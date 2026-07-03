@@ -7,9 +7,13 @@ import '../../features/authentication/presentation/change_pin_screen.dart';
 import '../../features/authentication/presentation/lock_screen.dart';
 import '../../features/authentication/presentation/pin_setup_screen.dart';
 import '../../features/calculator/presentation/calculator_screen.dart';
+import '../../features/documents/presentation/document_list_screen.dart';
+import '../../features/documents/presentation/document_viewer_screen.dart';
 import '../../features/photos/presentation/photo_grid_screen.dart';
 import '../../features/photos/presentation/photo_viewer_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
+import '../../features/videos/presentation/video_grid_screen.dart';
+import '../../features/videos/presentation/video_player_screen.dart';
 import '../../features/vault/domain/vault_item.dart';
 import '../../features/vault/presentation/trash_screen.dart';
 import '../../features/vault/presentation/vault_home_screen.dart';
@@ -26,6 +30,8 @@ abstract final class AppRoutes {
   static const String vaultFavorites = '/vault/favorites';
   static const String vaultTrash = '/vault/trash';
   static const String photoViewer = '/vault/photo-viewer';
+  static const String videoPlayer = '/vault/video-player';
+  static const String documentViewer = '/vault/document-viewer';
   static const String changePin = '/vault/change-pin';
   static const String resetPin = '/reset-pin';
 
@@ -122,9 +128,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final VaultItemType type =
                   VaultItemType.values.byName(state.pathParameters['type']!);
-              return type == VaultItemType.photo
-                  ? const PhotoGridScreen()
-                  : VaultItemListScreen.category(type);
+              return switch (type) {
+                VaultItemType.photo => const PhotoGridScreen(),
+                VaultItemType.video => const VideoGridScreen(),
+                VaultItemType.document => const DocumentListScreen(),
+                _ => VaultItemListScreen.category(type),
+              };
             },
           ),
           GoRoute(
@@ -144,6 +153,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 state.extra is PhotoViewerArgs ? null : AppRoutes.vault,
             builder: (context, state) => PhotoViewerScreen(
               args: state.extra! as PhotoViewerArgs,
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.videoPlayer,
+            name: 'videoPlayer',
+            redirect: (context, state) =>
+                state.extra is VideoPlayerArgs ? null : AppRoutes.vault,
+            builder: (context, state) => VideoPlayerScreen(
+              args: state.extra! as VideoPlayerArgs,
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.documentViewer,
+            name: 'documentViewer',
+            redirect: (context, state) =>
+                state.extra is DocumentViewerArgs ? null : AppRoutes.vault,
+            builder: (context, state) => DocumentViewerScreen(
+              args: state.extra! as DocumentViewerArgs,
             ),
           ),
           GoRoute(

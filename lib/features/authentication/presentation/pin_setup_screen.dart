@@ -41,11 +41,17 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
   bool _recoverySaved = false;
   bool _finishing = false;
 
+  /// Captured in initState so dispose() never touches `ref` after teardown.
+  SecureScreenService? _secureScreen;
+
   @override
   void initState() {
     super.initState();
     // The recovery key is shown on this screen — block capture while here.
-    ref.read(secureScreenServiceProvider).enable();
+    final SecureScreenService secureScreen =
+        ref.read(secureScreenServiceProvider);
+    _secureScreen = secureScreen;
+    secureScreen.enable();
     ref.read(biometricServiceProvider).isDeviceSupported().then((bool ok) {
       if (mounted) setState(() => _bioSupported = ok);
     });
@@ -54,7 +60,8 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
   @override
   void dispose() {
     // Session is still `none` after setup; return to normal capture mode.
-    ref.read(secureScreenServiceProvider).disable();
+    // Use the captured reference — reading `ref` here is illegal.
+    _secureScreen?.disable();
     super.dispose();
   }
 

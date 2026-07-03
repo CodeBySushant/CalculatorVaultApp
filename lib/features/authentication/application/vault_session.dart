@@ -50,10 +50,17 @@ class VaultSessionController extends Notifier<VaultSessionState> {
   Timer? _idleTimer;
   _SessionLifecycleObserver? _observer;
 
+  /// While > 0, background lifecycle events do NOT lock the vault. This
+  /// covers authorized excursions that necessarily background the app —
+  /// the system photo/video picker, the share sheet, the biometric prompt —
+  /// which must not be mistaken for the user leaving the app. It is a
+  /// counter (not a bool) so overlapping operations nest correctly.
+  int _autoLockSuspensions = 0;
+
   @override
   VaultSessionState build() {
     final _SessionLifecycleObserver observer =
-        _SessionLifecycleObserver(onBackground: lock);
+        _SessionLifecycleObserver(onBackground: _onBackground);
     WidgetsBinding.instance.addObserver(observer);
     _observer = observer;
     ref.onDispose(() {
@@ -77,10 +84,32 @@ class VaultSessionController extends Notifier<VaultSessionState> {
     }
   }
 
+  /// Wraps an operation that legitimately backgrounds the app (picker,
+  /// share sheet) so it does not trigger the background auto-lock. Always
+  /// restores locking afterward, even on error.
+  Future<T> withoutAutoLock<T>(Future<T> Function() action) async {
+    _autoLockSuspensions++;
+    _idleTimer?.cancel();
+    try {
+      return await action();
+    } finally {
+      if (_autoLockSuspensions > 0) _autoLockSuspensions--;
+      // Re-arm the idle timer if still unlocked.
+      if (state == VaultSessionState.unlocked) _restartIdleTimer();
+    }
+  }
+
+  /// Handles a background lifecycle event, honoring active suspensions.
+  void _onBackground() {
+    if (_autoLockSuspensions > 0) return;
+    lock();
+  }
+
   /// Ends the session entirely: back to plain-calculator mode, so the lock
   /// screen can no longer appear. Used by the vault's exit action.
   void end() {
     _idleTimer?.cancel();
+    _autoLockSuspensions = 0;
     state = VaultSessionState.none;
   }
 

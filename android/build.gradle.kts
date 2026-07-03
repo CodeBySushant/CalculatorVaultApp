@@ -1,21 +1,15 @@
-allprojects {
+﻿allprojects {
     repositories {
         google()
         mavenCentral()
     }
 }
 
-val newBuildDir: Directory =
-    rootProject.layout.buildDirectory
-        .dir("../../build")
-        .get()
-rootProject.layout.buildDirectory.value(newBuildDir)
+// --- Build output redirect (required so `flutter run` can find the APK). ---
+rootProject.layout.buildDirectory.set(file("${rootProject.projectDir}/../build"))
 
 subprojects {
-    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
-    project.layout.buildDirectory.value(newSubprojectBuildDir)
-}
-subprojects {
+    layout.buildDirectory.set(file("${rootProject.projectDir}/../build/${project.name}"))
     project.evaluationDependsOn(":app")
 }
 
