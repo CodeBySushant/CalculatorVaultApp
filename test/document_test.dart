@@ -11,7 +11,13 @@ void main() {
 
     test('classifies PDFs', () {
       expect(documentKindFor('contract.pdf', null), DocumentKind.pdf);
+      expect(documentKindFor('SCAN.PDF', null), DocumentKind.pdf);
       expect(documentKindFor('noext', 'application/pdf'), DocumentKind.pdf);
+      // Misnamed but declared PDF → mime wins, renders in-app.
+      expect(
+        documentKindFor('report.docx', 'application/pdf'),
+        DocumentKind.pdf,
+      );
     });
 
     test('classifies text and code', () {

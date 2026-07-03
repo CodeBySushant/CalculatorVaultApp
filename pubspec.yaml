@@ -33,6 +33,9 @@ dependencies:
   # Document import. Its Android module needs compileSdk 36 alignment —
   # handled by the subprojects block in android/build.gradle.kts.
   file_picker: ^11.0.2
+  # In-app PDF rendering (pdfium). Loads directly from decrypted bytes in
+  # memory — no plaintext temp file ever touches disk for viewing.
+  pdfrx: ^2.1.0
 
   # Image decoding / thumbnail generation
   image: ^4.3.0

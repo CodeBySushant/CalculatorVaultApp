@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:pdfrx/pdfrx.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/crypto/vault_file_store.dart';
@@ -20,9 +21,10 @@ class DocumentViewerArgs {
   final String itemId;
 }
 
-/// Views a vault document. Images and text render in-app; PDFs and other
-/// formats open in the system viewer (the file is decrypted to a temp copy,
-/// which is wiped when the vault locks).
+/// Views a vault document. Images, text, and PDFs render fully in-app
+/// (PDFs from decrypted bytes in memory — no plaintext temp file). Other
+/// formats open in the system viewer via a temp copy that is wiped when
+/// the vault locks.
 class DocumentViewerScreen extends ConsumerWidget {
   const DocumentViewerScreen({super.key, required this.args});
 
@@ -70,7 +72,8 @@ class DocumentViewerScreen extends ConsumerWidget {
       body: switch (kind) {
         DocumentKind.image => _ImageBody(relativePath: item.relativePath!),
         DocumentKind.text => _TextBody(relativePath: item.relativePath!),
-        DocumentKind.pdf || DocumentKind.other => _ExternalBody(
+        DocumentKind.pdf => _PdfBody(item: item),
+        DocumentKind.other => _ExternalBody(
             item: item,
             onOpen: () => _openExternally(context, ref, item),
           ),
@@ -180,6 +183,93 @@ class _TextBody extends ConsumerWidget {
             height: 1.5,
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// In-app PDF viewer. Decrypted bytes are handed to pdfrx in memory —
+/// nothing is ever written to disk in plaintext for viewing. Supports
+/// pinch-zoom, paging, and shows the current page in an overlay.
+class _PdfBody extends ConsumerStatefulWidget {
+  const _PdfBody({required this.item});
+
+  final VaultItem item;
+
+  @override
+  ConsumerState<_PdfBody> createState() => _PdfBodyState();
+}
+
+class _PdfBodyState extends ConsumerState<_PdfBody> {
+  final PdfViewerController _controller = PdfViewerController();
+  int _page = 1;
+  int _pageCount = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final AsyncValue<Uint8List> bytes =
+        ref.watch(documentBytesProvider(widget.item.relativePath!));
+    final ThemeData theme = Theme.of(context);
+
+    return bytes.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) => const EmptyState(
+        icon: Symbols.picture_as_pdf,
+        title: 'Could not load PDF',
+        message: 'The document could not be decrypted.',
+      ),
+      data: (Uint8List data) => Stack(
+        children: <Widget>[
+          PdfViewer.data(
+            data,
+            sourceName: widget.item.name,
+            controller: _controller,
+            params: PdfViewerParams(
+              backgroundColor: theme.colorScheme.surface,
+              maxScale: 8,
+              onViewerReady: (PdfDocument document, PdfViewerController _) {
+                if (mounted) {
+                  setState(() => _pageCount = document.pages.length);
+                }
+              },
+              onPageChanged: (int? pageNumber) {
+                if (mounted && pageNumber != null) {
+                  setState(() => _page = pageNumber);
+                }
+              },
+              errorBannerBuilder: (BuildContext context, Object error,
+                      StackTrace? stackTrace, PdfDocumentRef documentRef) =>
+                  const EmptyState(
+                icon: Symbols.picture_as_pdf,
+                title: 'Could not render PDF',
+                message:
+                    'This file may be corrupted or password-protected.',
+              ),
+            ),
+          ),
+          if (_pageCount > 0)
+            Positioned(
+              right: AppSpacing.md,
+              bottom: AppSpacing.md,
+              child: IgnorePointer(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.85),
+                    borderRadius: AppRadius.smAll,
+                  ),
+                  child: Text(
+                    '$_page / $_pageCount',
+                    style: theme.textTheme.labelMedium,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

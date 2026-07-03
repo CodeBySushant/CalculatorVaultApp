@@ -11,7 +11,7 @@ enum DocumentKind {
   /// Rendered in-app as scrollable text.
   text,
 
-  /// PDF — opened via the system viewer (share/open sheet).
+  /// PDF — rendered in-app (pdfrx) directly from decrypted bytes.
   pdf,
 
   /// Everything else (Office, archives, unknown) — opened externally.
