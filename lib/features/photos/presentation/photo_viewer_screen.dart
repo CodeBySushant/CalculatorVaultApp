@@ -198,9 +198,13 @@ class _ZoomablePhotoState extends ConsumerState<_ZoomablePhoto> {
       _transform.value = Matrix4.identity();
     } else {
       final Offset position = _doubleTapDetails!.localPosition;
+      const double scale = 2.5;
       _transform.value = Matrix4.identity()
-        ..translate(-position.dx * 1.5, -position.dy * 1.5)
-        ..scale(2.5);
+        ..setEntry(0, 0, scale)
+        ..setEntry(1, 1, scale)
+        ..setEntry(2, 2, scale)
+        ..setEntry(0, 3, -position.dx * (scale - 1))
+        ..setEntry(1, 3, -position.dy * (scale - 1));
     }
   }
 

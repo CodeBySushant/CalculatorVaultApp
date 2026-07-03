@@ -27,7 +27,15 @@ class ThumbnailService {
 
 Uint8List _generate(String sourcePath) {
   final Uint8List bytes = File(sourcePath).readAsBytesSync();
-  final img.Image? decoded = img.decodeImage(bytes);
+  final img.Image? decoded;
+  try {
+    decoded = img.decodeImage(bytes);
+  } on Object catch (e) {
+    // The decoder can throw (e.g. RangeError) on truncated or non-image
+    // data rather than returning null. Normalize every failure into a
+    // typed, catchable exception.
+    throw UnknownException('This image could not be decoded.', cause: e);
+  }
   if (decoded == null) {
     throw const UnknownException('This image format is not supported.');
   }

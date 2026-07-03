@@ -330,17 +330,18 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
                   tooltip: 'Copy',
                   icon: const Icon(Symbols.content_copy, size: 22),
                   onPressed: () async {
+                    final ScaffoldMessengerState messenger =
+                        ScaffoldMessenger.of(context);
                     await Clipboard.setData(ClipboardData(text: code));
                     AppHaptics.selection();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Recovery key copied'),
-                          behavior: SnackBarBehavior.floating,
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
-                    }
+                    if (!mounted) return;
+                    messenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('Recovery key copied'),
+                        behavior: SnackBarBehavior.floating,
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
                   },
                 ),
               ],

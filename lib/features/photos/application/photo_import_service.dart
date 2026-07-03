@@ -8,7 +8,7 @@ import '../../../core/crypto/vault_file_store.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../vault/domain/vault_item.dart';
-import 'thumbnail_service.dart';
+import '../data/thumbnail_service.dart';
 
 final photoImportServiceProvider = Provider<PhotoImportService>(
   (ref) => PhotoImportService(

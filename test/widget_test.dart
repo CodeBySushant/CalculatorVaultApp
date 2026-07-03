@@ -1,29 +1,11 @@
-// This is a basic Flutter widget test.
+// This file replaces the default `flutter create` template test, which
+// referenced a non-existent `MyApp`. The app's real tests live in the other
+// files in this directory (expression_engine_test.dart, crypto_service_test.dart,
+// vault_items_test.dart, photo_test.dart, and so on).
 //
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// It is intentionally minimal: booting the full app in a widget test needs
+// Hive + secure storage + path_provider fakes, which the integration tests
+// in later phases set up properly. Unit/widget coverage of every feature is
+// already provided by the dedicated suites.
 
-import 'package:calculator_vault/main.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-
-void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
-
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
-  });
-}
+void main() {}

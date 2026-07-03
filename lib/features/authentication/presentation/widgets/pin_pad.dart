@@ -121,11 +121,14 @@ class PinPad extends StatelessWidget {
           Row(children: <Widget>[digitKey('7'), digitKey('8'), digitKey('9')]),
           Row(
             children: <Widget>[
-              padKey(
-                Icon(Symbols.fingerprint, size: 28, color: scheme.primary),
-                onBiometric,
-                semanticLabel: 'Unlock with biometrics',
-              ),
+              if (onBiometric != null)
+                padKey(
+                  Icon(Symbols.fingerprint, size: 28, color: scheme.primary),
+                  onBiometric,
+                  semanticLabel: 'Unlock with biometrics',
+                )
+              else
+                const Expanded(child: SizedBox()),
               digitKey('0'),
               padKey(
                 Icon(Symbols.backspace, size: 24, color: scheme.onSurface),
