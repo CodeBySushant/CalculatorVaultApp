@@ -226,7 +226,8 @@ class _PdfBodyState extends ConsumerState<_PdfBody> {
             controller: _controller,
             params: PdfViewerParams(
               backgroundColor: theme.colorScheme.surface,
-              maxScale: 8,
+              sizeDelegateProvider:
+                  const PdfViewerSizeDelegateProviderLegacy(maxScale: 8),
               onViewerReady: (PdfDocument document, PdfViewerController _) {
                 if (mounted) {
                   setState(() => _pageCount = document.pages.length);
@@ -242,8 +243,7 @@ class _PdfBodyState extends ConsumerState<_PdfBody> {
                   const EmptyState(
                 icon: Symbols.picture_as_pdf,
                 title: 'Could not render PDF',
-                message:
-                    'This file may be corrupted or password-protected.',
+                message: 'This file may be corrupted or password-protected.',
               ),
             ),
           ),
