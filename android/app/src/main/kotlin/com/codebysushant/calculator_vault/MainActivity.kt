@@ -1,7 +1,7 @@
 package com.codebysushant.calculator_vault
 
 import android.view.WindowManager
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
@@ -11,10 +11,12 @@ import io.flutter.plugin.common.MethodChannel
  * `enable`  -> adds FLAG_SECURE: screenshots blocked, recents preview blank.
  * `disable` -> clears FLAG_SECURE (plain calculator mode).
  *
- * NOTE: if you change the applicationId/org during `flutter create`, update
- * the package line above to match the generated MainActivity's package.
+ * Extends FlutterFragmentActivity (NOT FlutterActivity): local_auth's
+ * BiometricPrompt requires a FragmentActivity host — with a plain
+ * FlutterActivity every biometric call throws and silently degrades to
+ * "not available".
  */
-class MainActivity : FlutterActivity() {
+class MainActivity : FlutterFragmentActivity() {
     private val channelName = "calculator_vault/secure_screen"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

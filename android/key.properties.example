@@ -1,0 +1,10 @@
+# Copy this file to android/key.properties and fill in your real values.
+# key.properties is gitignored — NEVER commit it.
+#
+# Generate the keystore once (keep it forever — losing it means losing the
+# ability to update the app if you opt out of Play App Signing):
+#   keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=upload
+storeFile=../upload-keystore.jks

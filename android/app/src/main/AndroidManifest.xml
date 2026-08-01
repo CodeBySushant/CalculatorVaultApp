@@ -1,8 +1,25 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Biometric unlock (local_auth). -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+
+    <!-- NOTE: no INTERNET permission on purpose — the app is 100% offline.
+         Fonts are bundled as assets; nothing ever leaves the device. -->
+
     <application
-        android:label="calculator_vault"
+        android:label="Calculator"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        tools:targetApi="s">
+        <!-- Backup is disabled deliberately: the AES master key lives in the
+             Android Keystore and never transfers between devices, so a
+             restored copy of the encrypted vault would be undecryptable and
+             look like data loss. It also keeps encrypted blobs off Google
+             Drive entirely. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
