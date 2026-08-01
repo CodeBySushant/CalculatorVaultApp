@@ -1,4 +1,5 @@
 import 'package:calculator_vault/core/services/secure_storage_service.dart';
+import 'package:calculator_vault/features/authentication/domain/pin_attempt_guard.dart';
 import 'package:calculator_vault/features/authentication/domain/pin_verifier.dart';
 import 'package:calculator_vault/features/calculator/data/history_repository.dart';
 import 'package:calculator_vault/features/calculator/domain/history_entry.dart';
@@ -25,12 +26,47 @@ class _FakePinVerifier extends PinVerifier {
   final String? acceptedPin;
 
   @override
+  Future<bool> isPinSet() async => acceptedPin != null;
+
+  @override
   Future<bool> verify(String candidate) async => candidate == acceptedPin;
+}
+
+/// In-memory mirror of [PinAttemptGuard]'s policy — no platform storage.
+class _FakeAttemptGuard extends PinAttemptGuard {
+  _FakeAttemptGuard() : super(SecureStorageService());
+
+  int failures = 0;
+  bool lockedOut = false;
+
+  @override
+  Future<Duration> remainingLockout() async =>
+      lockedOut ? const Duration(seconds: 30) : Duration.zero;
+
+  @override
+  Future<bool> canAttempt() async => !lockedOut;
+
+  @override
+  Future<Duration> recordFailure() async {
+    failures++;
+    if (failures >= PinAttemptGuard.maxAttempts) {
+      lockedOut = true;
+      return PinAttemptGuard.baseCooldown;
+    }
+    return Duration.zero;
+  }
+
+  @override
+  Future<void> reset() async {
+    failures = 0;
+    lockedOut = false;
+  }
 }
 
 void main() {
   late ProviderContainer container;
   late _InMemoryHistory history;
+  late _FakeAttemptGuard guard;
 
   CalculatorController controller() =>
       container.read(calculatorControllerProvider.notifier);
@@ -38,13 +74,22 @@ void main() {
 
   void setUpContainer({String? acceptedPin}) {
     history = _InMemoryHistory();
+    guard = _FakeAttemptGuard();
     container = ProviderContainer(
       overrides: <Override>[
         calcHistoryRepositoryProvider.overrideWithValue(history),
         pinVerifierProvider.overrideWithValue(_FakePinVerifier(acceptedPin)),
+        pinAttemptGuardProvider.overrideWithValue(guard),
       ],
     );
     addTearDown(container.dispose);
+  }
+
+  Future<void> typeAndEquals(String digits) async {
+    for (final String d in digits.split('')) {
+      controller().appendDigit(d);
+    }
+    await controller().onEquals();
   }
 
   group('input rules', () {
@@ -222,6 +267,51 @@ void main() {
       final EqualsOutcome outcome = await controller().onEquals();
       expect(outcome, EqualsOutcome.evaluated);
       expect(state().expression, '4821');
+    });
+  });
+
+  group('brute-force guard', () {
+    test('wrong digit entries count as failed attempts when a PIN exists',
+        () async {
+      setUpContainer(acceptedPin: '4821');
+      await typeAndEquals('1111');
+      expect(guard.failures, 1);
+    });
+
+    test('digit entries never count when no PIN is configured', () async {
+      setUpContainer();
+      await typeAndEquals('1111');
+      expect(guard.failures, 0);
+    });
+
+    test('after lockout even the correct PIN evaluates as a number',
+        () async {
+      setUpContainer(acceptedPin: '4821');
+      for (int i = 0; i < PinAttemptGuard.maxAttempts; i++) {
+        await typeAndEquals('1111');
+      }
+      expect(guard.lockedOut, isTrue);
+
+      controller().clear();
+      controller()
+        ..appendDigit('4')
+        ..appendDigit('8')
+        ..appendDigit('2')
+        ..appendDigit('1');
+      final EqualsOutcome outcome = await controller().onEquals();
+      // Disguise preserved: no unlock, no error, just a number.
+      expect(outcome, EqualsOutcome.evaluated);
+      expect(state().expression, '4821');
+    });
+
+    test('a correct PIN resets the failure counter', () async {
+      setUpContainer(acceptedPin: '4821');
+      await typeAndEquals('1111');
+      expect(guard.failures, 1);
+      controller().clear();
+      await typeAndEquals('4821');
+      expect(guard.failures, 0);
+      expect(guard.lockedOut, isFalse);
     });
   });
 }

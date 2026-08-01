@@ -53,4 +53,11 @@ abstract final class SecureKeys {
 
   /// Random salt used when hashing the recovery key.
   static const String recoverySalt = 'vault_recovery_salt';
+
+  /// Brute-force guard: consecutive failed PIN attempts (int as string).
+  /// Persisted so force-killing the app cannot reset the counter.
+  static const String pinFailedAttempts = 'vault_pin_failed_attempts';
+
+  /// Brute-force guard: lockout deadline in millisecondsSinceEpoch.
+  static const String pinLockoutUntil = 'vault_pin_lockout_until';
 }

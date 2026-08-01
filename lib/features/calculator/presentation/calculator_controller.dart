@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/errors/app_exception.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../authentication/domain/pin_attempt_guard.dart';
 import '../../authentication/domain/pin_verifier.dart';
 import '../data/history_repository.dart';
 import '../domain/expression_engine.dart';
@@ -78,6 +79,8 @@ class CalculatorController extends Notifier<CalculatorState> {
   CalcHistoryRepository get _history => ref.read(calcHistoryRepositoryProvider);
 
   PinVerifier get _pinVerifier => ref.read(pinVerifierProvider);
+
+  PinAttemptGuard get _attemptGuard => ref.read(pinAttemptGuardProvider);
 
   // -------------------------------------------------------------------------
   // Input
@@ -180,9 +183,29 @@ class CalculatorController extends Notifier<CalculatorState> {
     // Secret vault check: pure 4–8 digit entries are tested against the
     // stored PIN hash. On mismatch (or when no PIN exists) the calculator
     // continues completely normally — digits simply evaluate to themselves.
-    if (_pinPattern.hasMatch(expr) && await _pinVerifier.verify(expr)) {
-      state = const CalculatorState();
-      return EqualsOutcome.vaultPinMatched;
+    //
+    // Brute-force protection: the check shares a persisted attempt guard
+    // with the lock screen. During a lockout NO verification runs at all —
+    // the entry just evaluates as a number, so the disguise is preserved
+    // and the lockout cannot be probed from the calculator. Failed digit
+    // entries only count while a PIN actually exists.
+    if (_pinPattern.hasMatch(expr)) {
+      try {
+        final bool pinExists = await _pinVerifier.isPinSet();
+        if (pinExists && await _attemptGuard.canAttempt()) {
+          if (await _pinVerifier.verify(expr)) {
+            await _attemptGuard.reset();
+            state = const CalculatorState();
+            return EqualsOutcome.vaultPinMatched;
+          }
+          // Wrong digits with a PIN configured: count it silently.
+          await _attemptGuard.recordFailure();
+        }
+      } on AppException catch (e) {
+        // Any storage/guard failure: the calculator must keep behaving
+        // like a plain calculator, so fall through to evaluation.
+        AppLogger.error('Calculator', 'secret PIN check failed', e);
+      }
     }
 
     try {

@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Typography system.
 ///
 /// Manrope for display/headline (geometric, premium), Inter for body and
 /// labels (excellent small-size readability). Sizes follow Material 3 with
 /// tightened letter spacing on large styles.
+///
+/// Both families are BUNDLED as assets (see `assets/fonts/` + pubspec
+/// `fonts:` section) instead of fetched via google_fonts. The app declares
+/// no INTERNET permission, so a runtime fetch would silently fail in
+/// release builds and fall back to system fonts — bundling guarantees the
+/// design system renders identically everywhere and keeps the app fully
+/// offline.
 abstract final class AppTypography {
+  static const String _display = 'Manrope';
+  static const String _body = 'Inter';
+
   static TextTheme textTheme(Brightness brightness) {
     final Color primary = brightness == Brightness.dark
         ? const Color(0xFFF5F5F7)
@@ -16,7 +25,8 @@ abstract final class AppTypography {
         : const Color(0xFF5A5A66);
 
     TextStyle display(double size, FontWeight weight, {double? spacing}) =>
-        GoogleFonts.manrope(
+        TextStyle(
+          fontFamily: _display,
           fontSize: size,
           fontWeight: weight,
           letterSpacing: spacing ?? -0.5,
@@ -24,7 +34,8 @@ abstract final class AppTypography {
         );
 
     TextStyle body(double size, FontWeight weight, {Color? color}) =>
-        GoogleFonts.inter(
+        TextStyle(
+          fontFamily: _body,
           fontSize: size,
           fontWeight: weight,
           color: color ?? primary,

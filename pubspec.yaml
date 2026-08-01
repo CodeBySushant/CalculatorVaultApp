@@ -1,7 +1,10 @@
 name: calculator_vault
 description: A premium calculator with a hidden, fully encrypted personal vault.
 publish_to: 'none'
-version: 0.1.0+1
+# versionName+versionCode. versionCode must strictly increase with every
+# Play upload, forever. Convention: bump patch for fixes, minor for
+# features, and +N on every store upload.
+version: 1.0.0+1
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -46,7 +49,9 @@ dependencies:
   lottie: ^3.2.0
 
   # Design
-  google_fonts: ^6.2.1
+  # NOTE: google_fonts was removed on purpose. The app has no INTERNET
+  # permission (fully offline vault), so runtime font fetching would fail
+  # silently in release builds. Manrope + Inter are bundled below.
   material_symbols_icons: ^4.2801.1
   dynamic_color: ^1.7.0
 
@@ -66,3 +71,27 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  fonts:
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/Manrope-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Manrope-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Manrope-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Manrope-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Manrope-ExtraBold.ttf
+          weight: 800
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700

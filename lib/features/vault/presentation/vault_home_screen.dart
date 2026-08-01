@@ -16,13 +16,14 @@ import 'widgets/vault_item_tile.dart';
 class VaultHomeScreen extends ConsumerWidget {
   const VaultHomeScreen({super.key});
 
+  // Notes and Passwords (Phases 10–11) are hidden until their editors
+  // ship — visible-but-unfinished sections invite bad reviews and Play
+  // reviewer confusion. Re-add the tuples below when the features land.
   static const List<(VaultItemType, String)> _categories =
       <(VaultItemType, String)>[
     (VaultItemType.photo, 'Photos'),
     (VaultItemType.video, 'Videos'),
     (VaultItemType.document, 'Documents'),
-    (VaultItemType.note, 'Notes'),
-    (VaultItemType.password, 'Passwords'),
   ];
 
   @override

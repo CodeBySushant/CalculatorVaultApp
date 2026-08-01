@@ -1,4 +1,4 @@
-allprojects {
+﻿allprojects {
     repositories {
         google()
         mavenCentral()
@@ -6,19 +6,15 @@ allprojects {
 }
 
 subprojects {
-    project.evaluationDependsOn(":app")
-
-    // Align every Flutter plugin's Android module to compileSdk 36 so
-    // modules that ship with an older compileSdk (e.g. file_picker) build
-    // cleanly against the app's toolchain.
-    afterEvaluate {
-        extensions.findByName("android")?.let { ext ->
-            when (ext) {
-                is com.android.build.gradle.LibraryExtension -> ext.compileSdk = 36
-                is com.android.build.gradle.AppExtension -> ext.compileSdkVersion(36)
-            }
+    // Align every Flutter plugin's Android library module to compileSdk 36
+    // (e.g. file_picker). plugins.withId is evaluation-order safe, unlike
+    // afterEvaluate, which fails once :app is already evaluated.
+    plugins.withId("com.android.library") {
+        extensions.configure<com.android.build.gradle.LibraryExtension> {
+            compileSdk = 36
         }
     }
+    project.evaluationDependsOn(":app")
 }
 
 tasks.register<Delete>("clean") {

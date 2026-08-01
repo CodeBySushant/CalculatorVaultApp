@@ -10,13 +10,15 @@ import '../../../core/utils/app_haptics.dart';
 import '../../../shared/shared.dart';
 import '../application/vault_session.dart';
 import '../data/biometric_service.dart';
+import '../domain/pin_attempt_guard.dart';
 import '../domain/pin_verifier.dart';
 import '../domain/recovery_key_service.dart';
 import 'widgets/pin_pad.dart';
 
 /// Shown when the vault auto-locked mid-session. Unlock with PIN or
-/// biometrics; includes a forgot-PIN recovery path and brute-force cooldown
-/// (5 wrong attempts → 30 second wait).
+/// biometrics; includes a forgot-PIN recovery path and a PERSISTED
+/// brute-force lockout shared with the calculator's secret PIN check
+/// (5 wrong attempts → escalating cooldown, survives app restarts).
 class LockScreen extends ConsumerStatefulWidget {
   const LockScreen({super.key});
 
@@ -25,25 +27,32 @@ class LockScreen extends ConsumerStatefulWidget {
 }
 
 class _LockScreenState extends ConsumerState<LockScreen> {
-  static const int _maxAttempts = 5;
-  static const Duration _cooldown = Duration(seconds: 30);
-
   String _entry = '';
   String? _error;
   int _errorNonce = 0;
-  int _failedAttempts = 0;
   bool _verifying = false;
   int _cooldownSecondsLeft = 0;
   Timer? _cooldownTimer;
 
   bool get _inCooldown => _cooldownSecondsLeft > 0;
 
+  PinAttemptGuard get _guard => ref.read(pinAttemptGuardProvider);
+
   @override
   void initState() {
     super.initState();
-    // Offer biometrics immediately when enabled.
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _tryBiometric(auto: true));
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // A lockout may already be active (started here, in the calculator,
+      // or before a force-kill) — resume its countdown first.
+      final Duration remaining = await _guard.remainingLockout();
+      if (!mounted) return;
+      if (remaining > Duration.zero) {
+        _startCooldown(remaining);
+      } else {
+        // Offer biometrics immediately when enabled.
+        _tryBiometric(auto: true);
+      }
+    });
   }
 
   @override
@@ -58,6 +67,7 @@ class _LockScreenState extends ConsumerState<LockScreen> {
     if (_inCooldown || !mounted) return;
     final bool ok = await biometrics.authenticate('Unlock your vault');
     if (ok && mounted) {
+      await _guard.reset();
       _unlock();
     } else if (!auto && mounted) {
       setState(() {
@@ -81,22 +91,36 @@ class _LockScreenState extends ConsumerState<LockScreen> {
   }
 
   Future<void> _submit() async {
+    if (_inCooldown) return;
     setState(() => _verifying = true);
+
+    // Re-check the persisted guard right before verifying, in case a
+    // lockout was started elsewhere while this screen was open.
+    final Duration active = await _guard.remainingLockout();
+    if (!mounted) return;
+    if (active > Duration.zero) {
+      _startCooldown(active);
+      return;
+    }
+
     final bool ok = await ref.read(pinVerifierProvider).verify(_entry);
     if (!mounted) return;
     if (ok) {
+      await _guard.reset();
       _unlock();
       return;
     }
+
     AppHaptics.heavy();
-    _failedAttempts++;
-    if (_failedAttempts >= _maxAttempts) {
-      _startCooldown();
+    final Duration lockout = await _guard.recordFailure();
+    if (!mounted) return;
+    if (lockout > Duration.zero) {
+      _startCooldown(lockout);
     } else {
       setState(() {
         _verifying = false;
         _entry = '';
-        _error = 'Wrong PIN. ${_maxAttempts - _failedAttempts} attempts left.';
+        _error = 'Wrong PIN. Try again.';
         _errorNonce++;
       });
     }
@@ -107,13 +131,12 @@ class _LockScreenState extends ConsumerState<LockScreen> {
     if (mounted) context.go(AppRoutes.vault);
   }
 
-  void _startCooldown() {
-    _failedAttempts = 0;
+  void _startCooldown(Duration duration) {
     setState(() {
       _verifying = false;
       _entry = '';
       _error = null;
-      _cooldownSecondsLeft = _cooldown.inSeconds;
+      _cooldownSecondsLeft = duration.inSeconds.clamp(1, 24 * 60 * 60);
     });
     _cooldownTimer?.cancel();
     _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
@@ -182,7 +205,9 @@ class _LockScreenState extends ConsumerState<LockScreen> {
     );
     controller.dispose();
     if (verified == true && mounted) {
-      context.go(AppRoutes.resetPin, extra: true);
+      // A valid recovery key also clears any brute-force lockout.
+      await _guard.reset();
+      if (mounted) context.go(AppRoutes.resetPin, extra: true);
     }
   }
 
