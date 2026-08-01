@@ -69,7 +69,7 @@ class VaultHomeScreen extends ConsumerWidget {
                   context.responsive<int>(compact: 2, medium: 3, expanded: 4),
               mainAxisSpacing: AppSpacing.sm + 4,
               crossAxisSpacing: AppSpacing.sm + 4,
-              childAspectRatio: 1.45,
+              childAspectRatio: 1.3,
               children: <Widget>[
                 for (final (int index, (VaultItemType, String) entry)
                     in _categories.indexed)
@@ -146,15 +146,24 @@ class _CategoryCard extends StatelessWidget {
             ),
             child: Icon(icon, size: 22, color: tint),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(label, style: theme.textTheme.titleSmall),
-              Text(
-                '$count ${count == 1 ? 'item' : 'items'}',
-                style: theme.textTheme.bodySmall,
+          // Shrink-safe: on narrow grids / large font scales the text block
+          // scales down instead of overflowing the card by a few pixels.
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.bottomLeft,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(label, style: theme.textTheme.titleSmall),
+                  Text(
+                    '$count ${count == 1 ? 'item' : 'items'}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ],
       ),

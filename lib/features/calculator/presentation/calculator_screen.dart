@@ -11,11 +11,17 @@ import '../../authentication/application/vault_session.dart';
 import 'calculator_controller.dart';
 import 'history_sheet.dart';
 
-/// The public face of the app: a premium, fully functional calculator.
+/// The public face of the app: a clean, stock-looking calculator.
 ///
 /// `=` on a pure 4–8 digit entry is silently tested against the vault PIN.
 /// On mismatch nothing special happens — the digits just evaluate to
 /// themselves like any calculator.
+///
+/// Design intent: indistinguishable from a system calculator. Material You
+/// tonal pill keys (digits neutral, operators tonal, equals primary), a
+/// quiet display, and the device's dynamic color scheme — so on any phone
+/// it inherits the system palette and looks factory-installed. Premium
+/// comes from type, spacing, and motion, never from loud color.
 class CalculatorScreen extends ConsumerWidget {
   const CalculatorScreen({super.key});
 
@@ -142,8 +148,8 @@ class CalculatorScreen extends ConsumerWidget {
                   _Keypad(
                     keys: _keys,
                     keyHeight: context.responsive<double>(
-                      compact: 64,
-                      medium: 72,
+                      compact: 68,
+                      medium: 76,
                     ),
                     onKey: (String key) => _onKey(context, ref, key),
                   ),
@@ -154,7 +160,7 @@ class CalculatorScreen extends ConsumerWidget {
   }
 }
 
-/// Expression + live preview + error + action icons.
+/// Expression + live preview + error + quiet action icons.
 class _DisplayPane extends ConsumerWidget {
   const _DisplayPane({required this.onCopy, required this.onPaste});
 
@@ -186,15 +192,23 @@ class _DisplayPane extends ConsumerWidget {
                 children: <Widget>[
                   FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Text(
-                      state.expression.isEmpty ? '0' : state.expression,
-                      style: theme.textTheme.displayMedium,
-                      maxLines: 1,
-                      semanticsLabel: state.expression.isEmpty
-                          ? 'Display shows zero'
-                          : 'Display shows ${state.expression}',
+                    child: AnimatedDefaultTextStyle(
+                      duration: AppMotion.fast,
+                      curve: AppMotion.emphasized,
+                      style: (state.justEvaluated
+                              ? theme.textTheme.displayLarge
+                              : theme.textTheme.displayMedium) ??
+                          const TextStyle(),
+                      child: Text(
+                        state.expression.isEmpty ? '0' : state.expression,
+                        maxLines: 1,
+                        semanticsLabel: state.expression.isEmpty
+                            ? 'Display shows zero'
+                            : 'Display shows ${state.expression}',
+                      ),
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.xs),
                   AnimatedSwitcher(
                     duration: AppMotion.fast,
                     child: state.error != null
@@ -259,6 +273,12 @@ class _DisplayPane extends ConsumerWidget {
             ],
           ),
         ),
+        Divider(
+          height: 1,
+          indent: AppSpacing.md,
+          endIndent: AppSpacing.md,
+          color: scheme.outlineVariant.withValues(alpha: 0.5),
+        ),
       ],
     );
   }
@@ -277,20 +297,10 @@ class _Keypad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme scheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.md,
-        AppSpacing.md,
-        AppSpacing.lg,
-      ),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-      ),
+    // No panel, no card — keys sit directly on the surface like every
+    // system calculator.
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.end,
@@ -304,7 +314,7 @@ class _Keypad extends StatelessWidget {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.xs + 2,
+                          horizontal: AppSpacing.xs + 1,
                         ),
                         child: _CalculatorKey(
                           label: key,
@@ -322,7 +332,16 @@ class _Keypad extends StatelessWidget {
   }
 }
 
-/// A single calculator key with ripple, press animation and semantics.
+/// A single calculator key: Material You tonal pill.
+///
+/// - digits / ⌫ → neutral tonal (surfaceContainerHigh)
+/// - operators  → secondaryContainer tonal
+/// - C          → tertiaryContainer tonal
+/// - `=`        → solid primary
+///
+/// Every color comes from the active [ColorScheme], so with dynamic color
+/// the keypad matches the phone's own Material You palette — exactly like
+/// a preinstalled calculator.
 class _CalculatorKey extends StatelessWidget {
   const _CalculatorKey({
     required this.label,
@@ -337,49 +356,55 @@ class _CalculatorKey extends StatelessWidget {
   bool get _isOperator =>
       const <String>{'÷', '×', '−', '+', '%', '( )'}.contains(label);
 
-  bool get _isDestructive => label == 'C' || label == '⌫';
-
   @override
   Widget build(BuildContext context) {
-    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
 
     final Color background;
     final Color foreground;
     if (label == '=') {
       background = scheme.primary;
       foreground = scheme.onPrimary;
-    } else if (_isDestructive) {
-      background = scheme.errorContainer.withValues(alpha: 0.6);
-      foreground = scheme.onErrorContainer;
+    } else if (label == 'C') {
+      background = scheme.tertiaryContainer;
+      foreground = scheme.onTertiaryContainer;
     } else if (_isOperator) {
-      background = scheme.secondaryContainer.withValues(alpha: 0.7);
+      background = scheme.secondaryContainer;
       foreground = scheme.onSecondaryContainer;
     } else {
-      background = scheme.surface;
+      background = scheme.surfaceContainerHigh;
       foreground = scheme.onSurface;
     }
 
+    // Full pill shape — the defining Material You calculator silhouette.
+    final BorderRadius radius = BorderRadius.circular(height / 2);
+
+    final Widget glyph = label == '⌫'
+        ? Icon(Symbols.backspace, size: 26, color: foreground)
+        : Text(
+            label,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: foreground,
+              fontWeight: FontWeight.w500,
+              fontSize: _isOperator || label == '=' ? 26 : 24,
+            ),
+          );
+
     return AnimatedPress(
+      pressedScale: 0.95,
       child: Semantics(
         button: true,
         label: 'Calculator key $label',
         child: Material(
           color: background,
-          borderRadius: AppRadius.lgAll,
+          borderRadius: radius,
           child: InkWell(
             onTap: onTap,
-            borderRadius: AppRadius.lgAll,
+            borderRadius: radius,
             child: SizedBox(
               height: height,
-              child: Center(
-                child: Text(
-                  label,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: foreground,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ),
+              child: Center(child: glyph),
             ),
           ),
         ),
